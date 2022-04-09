@@ -69,3 +69,28 @@ export EDITOR=code
 
 # Set ipdb as the default Python debugger
 export PYTHONBREAKPOINT=ipdb.set_trace
+
+co() {
+  local previous_branch="$(git rev-parse --abbrev-ref HEAD)"
+
+  git fetch origin
+  git checkout $1
+  git pull
+
+  local update_js="$(git diff --name-only $1 $previous_branch -- yarn.lock)"
+  local update_gem="$(git diff --name-only $1 $previous_branch -- Gemfile)"
+  local update_sql="$(git diff --name-only $1 $previous_branch -- db/structure.sql)"
+
+  if [ -n "$($update_js)" ]
+  then
+    yarn install --check-files
+  fi
+  if [ -n "$($update_gem)" ]
+  then
+    bundle
+  fi
+  if [ -n "$($update_sql)" ]
+  then
+    rails db:reset
+  fi
+}
